@@ -2,6 +2,7 @@ package com.cetcme.routedemo;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -33,7 +34,18 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 import butterknife.BindView;
@@ -70,8 +82,12 @@ public class MainActivity extends AppCompatActivity {
     private int defaultGPSSpan = 5;
     private List<LatLng> routePointsWhileRecording = new ArrayList<>();
     private JSONArray routePoints = new JSONArray();
-    private boolean routeReording = false;
+    private boolean routeRecording = false;
     private boolean showUser = true;
+    private boolean isFirstGetLocation = true;
+    private BDLocation userLocation;
+
+    private String TAG = "MainActivity";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,18 +97,15 @@ public class MainActivity extends AppCompatActivity {
         ButterKnife.bind(this);
 
         init();
+        Log.i(TAG, "onCreate: " + FileUtil.getFileNames());
     }
-
 
     public void onDestroy() {
         super.onDestroy();
         mLocationClient.stop();
 
         if (routePoints.length() != 0) {
-            SharedPreferences user = getSharedPreferences("user", Context.MODE_PRIVATE);
-            SharedPreferences.Editor editor = user.edit();
-            editor.putString("route", routePoints.toString());
-            editor.apply();
+            FileUtil.saveFile(getDate(), routePoints.toString());
         }
 
     }
@@ -109,8 +122,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void recordButtonTapped(View view) {
-        routeReording = !routeReording;
-        recordButton.setText(routeReording ? "STOP" : "RECORD");
+        routeRecording = !routeRecording;
+        recordButton.setText(routeRecording ? "STOP" : "RECORD");
     }
 
     public void showUserButtonTapped(View view) {
@@ -138,8 +151,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void routeButtonTapped(View view) {
-        SharedPreferences user = getSharedPreferences("user", Context.MODE_PRIVATE);
-        String arrayString = user.getString("route", "");
+        String lastFileName = FileUtil.getLastFileName();
+        String arrayString = FileUtil.readFile(lastFileName.replace(".txt", ""));
+
+        locationInfoEditText.setText(lastFileName + "\n"+ arrayString);
         List<LatLng> route = new ArrayList<>();
         if (!arrayString.equals("")) {
             try {
@@ -250,7 +265,7 @@ public class MainActivity extends AppCompatActivity {
             }
             userLocation = location;
 
-            if (routeReording) {
+            if (routeRecording) {
                 drawRouteWhileRecording(location);
                 routePoints.put(BDLocationToJson(location));
             }
@@ -272,9 +287,6 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private boolean isFirstGetLocation = true;
-    private BDLocation userLocation;
-
     private void drawRouteWhileRecording(BDLocation location) {
 
         if (routePointsWhileRecording.size() == 0) {
@@ -288,8 +300,6 @@ public class MainActivity extends AppCompatActivity {
             drawRoute(routePointsWhileRecording);
         }
     }
-
-
 
     private void initMyLocation() {
         mBaiduMap.setMyLocationEnabled(true);
@@ -322,6 +332,7 @@ public class MainActivity extends AppCompatActivity {
                 .newMapStatus(mapStatus);
         mBaiduMap.animateMapStatus(mapStatusUpdate);
     }
+
     public void drawRoute(List<LatLng> points) {
 
         //构建分段颜色索引数组
@@ -374,5 +385,13 @@ public class MainActivity extends AppCompatActivity {
         */
 
     }
+
+    private String getDate() {
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        String time = df.format(new Date());
+        Log.i(TAG, "getDate: " + time);
+        return time;
+    }
+
 
 }
