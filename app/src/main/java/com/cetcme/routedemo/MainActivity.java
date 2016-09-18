@@ -97,7 +97,7 @@ public class MainActivity extends AppCompatActivity {
         ButterKnife.bind(this);
 
         init();
-        Log.i(TAG, "onCreate: " + FileUtil.getFileNames());
+        FileUtil.getFileNames();
     }
 
     public void onDestroy() {

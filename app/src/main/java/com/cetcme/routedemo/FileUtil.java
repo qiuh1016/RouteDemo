@@ -11,6 +11,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  * Created by qiuhong on 9/18/16.
@@ -79,6 +81,7 @@ public class FileUtil {
         String fileNames = "";
         for (File file: files) {
             fileNames += file.getName() + "\n";
+            Log.i("files", "getFileNames: \n " + file.getName() + ", " + file.length() + ", " + stampToDate(file.lastModified()));
         }
         return fileNames;
     }
@@ -94,6 +97,15 @@ public class FileUtil {
         if (file.exists()) {
             file.delete();
         }
+    }
+
+    public static String stampToDate(long s){
+        String res;
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+//        long lt = new Long(s);
+        Date date = new Date(s);
+        res = simpleDateFormat.format(date);
+        return res;
     }
 
 }
