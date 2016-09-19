@@ -3,6 +3,7 @@ package com.cetcme.routedemo;
 import android.content.Context;
 import android.os.Environment;
 import android.util.Log;
+import android.widget.Toast;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -11,8 +12,13 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by qiuhong on 9/18/16.
@@ -23,7 +29,7 @@ public class FileUtil {
 
     public static String FILE_PATH = Environment.getExternalStorageDirectory() + "/routes/";
 
-    public static void saveFile(String name, String data) {
+    public static void saveFile(Context context, String name, String data) {
 
         File filePath = new File(FILE_PATH);
         if(!filePath.exists()) {
@@ -36,6 +42,7 @@ public class FileUtil {
             writer.write(data);
             writer.flush();
             writer.close();
+            Toast.makeText(context, "已保存为" + name + ".txt", Toast.LENGTH_SHORT).show();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (UnsupportedEncodingException e) {
@@ -49,7 +56,7 @@ public class FileUtil {
         FileInputStream fis = null;
         StringBuffer sBuf = new StringBuffer();
         try {
-            fis = new FileInputStream(FILE_PATH + name + ".txt");
+            fis = new FileInputStream(FILE_PATH + name);
             int len = 0;
             byte[] buf = new byte[1024];
             while ((len = fis.read(buf)) != -1) {
@@ -74,16 +81,18 @@ public class FileUtil {
         return null;
     }
 
-    public static String getFileNames() {
+    public static List<Map<String, Object>> getFilesData() {
         File f = new File(FILE_PATH);
         File[] files = f.listFiles();
-
-        String fileNames = "";
+        List<Map<String, Object>> filesData = new ArrayList<>();
         for (File file: files) {
-            fileNames += file.getName() + "\n";
-            Log.i("files", "getFileNames: \n " + file.getName() + ", " + file.length() + ", " + stampToDate(file.lastModified()));
+            Map<String, Object> map = new Hashtable<>();
+            map.put("fileName", file.getName());
+            map.put("lastModifyTime", stampToDate(file.lastModified()));
+            map.put("fileLength", (new BigDecimal(file.length() / 1024f)).setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue() + "KB");
+            filesData.add(map);
         }
-        return fileNames;
+        return filesData;
     }
 
     public static String getLastFileName() {

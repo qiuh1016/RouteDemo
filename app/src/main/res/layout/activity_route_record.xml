@@ -7,7 +7,7 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context="com.cetcme.routedemo.MainActivity">
+    tools:context=".RouteRecordActivity">
 
     <com.baidu.mapapi.map.MapView
         android:id="@+id/bmapView"
@@ -30,43 +30,32 @@
     <Button
         android:layout_width="80dp"
         android:layout_height="wrap_content"
-        android:text="HIDE"
-        android:id="@+id/showUserButton"
+        android:text="Save"
+        android:id="@+id/saveButton"
         android:layout_alignParentTop="true"
         android:layout_toRightOf="@+id/recordButton"
         android:layout_toEndOf="@+id/recordButton"
-        android:onClick="showUserButtonTapped"/>
-
-    <Button
-        android:layout_width="80dp"
-        android:layout_height="wrap_content"
-        android:text="定位"
-        android:id="@+id/locationButton"
-        android:layout_alignTop="@+id/editText"
-        android:layout_toRightOf="@+id/showUserButton"
-        android:layout_toEndOf="@+id/showUserButton"
-        android:onClick="locationButtonTapped"/>
+        android:onClick="saveButtonTapped"/>
 
     <EditText
         android:layout_width="50dp"
         android:layout_height="wrap_content"
         android:id="@+id/editText"
-        android:layout_alignParentTop="true"
-        android:layout_toRightOf="@+id/locationButton"
-        android:layout_marginLeft="30dp"
         android:inputType="number"
         android:textSize="13sp"
-        android:layout_alignBottom="@+id/setButton" />
+        android:layout_alignBottom="@+id/setButton"
+        android:layout_toLeftOf="@+id/button"
+        android:layout_toStartOf="@+id/button"
+        android:layout_alignParentTop="true" />
 
     <Button
         android:layout_width="80dp"
         android:layout_height="wrap_content"
         android:text="设置"
         android:id="@+id/setButton"
-        android:layout_alignBottom="@+id/showUserButton"
-        android:layout_toRightOf="@+id/editText"
-        android:layout_toEndOf="@+id/editText"
-        android:onClick="setButtonTapped"/>
+        android:layout_alignBottom="@+id/recordButton"
+        android:onClick="setButtonTapped"
+        android:layout_alignParentRight="true" />
 
     <EditText
         android:layout_width="match_parent"
@@ -85,9 +74,29 @@
         android:text="route"
         android:id="@+id/button"
         android:layout_alignTop="@+id/editText2"
-        android:layout_alignRight="@+id/setButton"
         android:layout_alignEnd="@+id/setButton"
-        android:onClick="routeButtonTapped"/>
+        android:onClick="routeButtonTapped"
+        android:layout_alignParentRight="true" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Hide"
+        android:id="@+id/showUserButton"
+        android:layout_below="@+id/button"
+        android:layout_alignLeft="@+id/button"
+        android:layout_alignStart="@+id/button"
+        android:onClick="showUserButtonTapped"/>
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="User"
+        android:id="@+id/userButton"
+        android:layout_below="@+id/showUserButton"
+        android:layout_alignLeft="@+id/showUserButton"
+        android:layout_alignStart="@+id/showUserButton"
+        android:onClick="userButtonTapped"/>
 
 
 </RelativeLayout>

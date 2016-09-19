@@ -1,14 +1,14 @@
 package com.cetcme.routedemo;
 
-import android.content.Context;
-import android.content.SharedPreferences;
-import android.os.Environment;
+import android.content.Intent;
+import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import com.baidu.mapapi.SDKInitializer;
 import com.baidu.mapapi.map.BaiduMap;
@@ -18,6 +18,7 @@ import com.baidu.mapapi.map.MapStatus;
 import com.baidu.mapapi.map.MapStatusUpdate;
 import com.baidu.mapapi.map.MapStatusUpdateFactory;
 import com.baidu.mapapi.map.MapView;
+import com.baidu.mapapi.map.MarkerOptions;
 import com.baidu.mapapi.map.MyLocationConfiguration;
 import com.baidu.mapapi.map.MyLocationData;
 
@@ -29,29 +30,22 @@ import com.baidu.location.Poi;
 import com.baidu.mapapi.map.OverlayOptions;
 import com.baidu.mapapi.map.PolylineOptions;
 import com.baidu.mapapi.model.LatLng;
+import com.baidu.mapapi.model.LatLngBounds;
+import com.kaopiz.kprogresshud.KProgressHUD;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
-public class MainActivity extends AppCompatActivity {
+public class RouteRecordActivity extends AppCompatActivity {
 
     @BindView(R.id.recordButton)
     Button recordButton;
@@ -61,9 +55,6 @@ public class MainActivity extends AppCompatActivity {
 
     @BindView(R.id.setButton)
     Button setButton;
-
-    @BindView(R.id.locationButton)
-    Button locationButton;
 
     @BindView(R.id.editText)
     EditText GPSSpanEditText;
@@ -79,7 +70,7 @@ public class MainActivity extends AppCompatActivity {
     public LocationClient mLocationClient = null;
     public BDLocationListener myListener = new MyLocationListener();
 
-    private int defaultGPSSpan = 5;
+    private int defaultGPSSpan = 10;
     private List<LatLng> routePointsWhileRecording = new ArrayList<>();
     private JSONArray routePoints = new JSONArray();
     private boolean routeRecording = false;
@@ -87,27 +78,25 @@ public class MainActivity extends AppCompatActivity {
     private boolean isFirstGetLocation = true;
     private BDLocation userLocation;
 
-    private String TAG = "MainActivity";
+    private KProgressHUD kProgressHUD;
+    private KProgressHUD okHUD;
+
+    private String TAG = "RouteRecordActivity";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         SDKInitializer.initialize(getApplicationContext());
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_route_record);
         ButterKnife.bind(this);
 
         init();
-        FileUtil.getFileNames();
+        initHud();
     }
 
     public void onDestroy() {
         super.onDestroy();
         mLocationClient.stop();
-
-        if (routePoints.length() != 0) {
-            FileUtil.saveFile(getDate(), routePoints.toString());
-        }
-
     }
 
     private void init() {
@@ -119,6 +108,25 @@ public class MainActivity extends AppCompatActivity {
         initLocation();
         initMyLocation();
         mLocationClient.start();
+    }
+
+    private void initHud() {
+        //hudView
+        kProgressHUD = KProgressHUD.create(this)
+                .setStyle(KProgressHUD.Style.SPIN_INDETERMINATE)
+                .setLabel("绘制中")
+                .setAnimationSpeed(1)
+                .setDimAmount(0.3f)
+                .setSize(110, 110)
+                .setCancellable(false);
+//        ImageView imageView = new ImageView(this);
+//        imageView.setBackgroundResource(R.drawable.checkmark);
+//        okHUD  =  KProgressHUD.create(this)
+//                .setCustomView(imageView)
+//                .setLabel("登陆成功")
+//                .setCancellable(false)
+//                .setSize(110,110)
+//                .setDimAmount(0.3f);
     }
 
     public void recordButtonTapped(View view) {
@@ -135,40 +143,53 @@ public class MainActivity extends AppCompatActivity {
     public void setButtonTapped(View view) {
         defaultGPSSpan = Integer.parseInt(GPSSpanEditText.getText().toString());
         initLocation();
+        Toast.makeText(RouteRecordActivity.this, "设置成功", Toast.LENGTH_SHORT).show();
     }
 
-    public void locationButtonTapped(View view) {
+    public void userButtonTapped(View view) {
         if (userLocation == null) {
             return;
         }
         MapStatus mapStatus = new MapStatus.Builder()
                 .target(new LatLng(userLocation.getLatitude(), userLocation.getLongitude()))
+                .overlook(0)
+                .rotate(0)
                 .build();
         MapStatusUpdate mapStatusUpdate = MapStatusUpdateFactory
                 .newMapStatus(mapStatus);
         mBaiduMap.animateMapStatus(mapStatusUpdate);
-
     }
 
     public void routeButtonTapped(View view) {
-        String lastFileName = FileUtil.getLastFileName();
-        String arrayString = FileUtil.readFile(lastFileName.replace(".txt", ""));
 
-        locationInfoEditText.setText(lastFileName + "\n"+ arrayString);
-        List<LatLng> route = new ArrayList<>();
-        if (!arrayString.equals("")) {
-            try {
-                JSONArray array = new JSONArray(arrayString);
-                for (int i = 0; i < array.length(); i++) {
-                    JSONObject json = (JSONObject) array.get(i);
-                    double lat = json.getDouble("latitude");
-                    double lng = json.getDouble("longitude");
-                    route.add(new LatLng(lat, lng));
-                }
-                drawRoute(route);
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
+        Intent intent = new Intent();
+        intent.setClass(RouteRecordActivity.this, RouteFilesActivity.class);
+        startActivityForResult(intent, 0);
+
+//        String lastFileName = FileUtil.getLastFileName();
+//        lastFileName = lastFileName.replace(".txt", "");
+//        new drawRouteFromFileTask().execute(lastFileName);
+
+    }
+
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch (resultCode) {
+            case RESULT_OK:
+                Bundle bundle = data.getExtras();
+                String str = bundle.getString("fileName");
+                new drawRouteFromFileTask().execute(str);
+                break;
+            default:
+                break;
+        }
+    }
+
+    public void saveButtonTapped(View view) {
+        if (routePoints.length() != 0) {
+            FileUtil.saveFile(RouteRecordActivity.this, getDate(), routePoints.toString());
+            routePoints = new JSONArray();
+        } else {
+            Toast.makeText(RouteRecordActivity.this, "保持失败:内容为空", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -338,10 +359,9 @@ public class MainActivity extends AppCompatActivity {
         //构建分段颜色索引数组
         List<Integer> colors = new ArrayList<>();
         if (true) {
-//            colors.add(R.color.colorRouteConved);
-            colors.add(0xFF167CF3); //纠偏成功显示蓝色
+            colors.add(0xFF5CA464);
+//            colors.add(0xFF167CF3); //纠偏成功显示蓝色
         } else {
-//            colors.add(R.color.colorRouteunConved);
             colors.add(0xFFE27575); //纠偏失败显示红色
         }
 
@@ -354,35 +374,36 @@ public class MainActivity extends AppCompatActivity {
 
         //起点终点标注
         //构建Marker图标
-//        BitmapDescriptor startBitmap = BitmapDescriptorFactory
-//                .fromResource(R.drawable.icon_start);
-//        BitmapDescriptor endBitmap = BitmapDescriptorFactory
-//                .fromResource(R.drawable.icon_end);
-//        //构建MarkerOption，用于在地图上添加Marker
-//        OverlayOptions startMaker = new MarkerOptions()
-//                .position(latLngs.get(0))
-//                .icon(startBitmap);
-//        OverlayOptions endMaker = new MarkerOptions()
-//                .position(latLngs.get(latLngs.size() - 1))
-//                .icon(endBitmap);
-//        //在地图上添加Marker，并显示
-//        baiduMap.addOverlay(startMaker);
-//        baiduMap.addOverlay(endMaker);
+        BitmapDescriptor startBitmap = BitmapDescriptorFactory
+                .fromResource(R.drawable.icon_start);
+        BitmapDescriptor endBitmap = BitmapDescriptorFactory
+                .fromResource(R.drawable.icon_end);
+        //构建MarkerOption，用于在地图上添加Marker
+        OverlayOptions startMaker = new MarkerOptions()
+                .position(points.get(0))
+                .icon(startBitmap);
+        OverlayOptions endMaker = new MarkerOptions()
+                .position(points.get(points.size() - 1))
+                .icon(endBitmap);
+        //在地图上添加Marker，并显示
+        mBaiduMap.addOverlay(startMaker);
+        mBaiduMap.addOverlay(endMaker);
 
         //showMediaPoint
-        /*
-        if (showMediaPoint && latLngs.size() < maxMediaPointMarkerNum) {
+        boolean showMediaPoint = false;
+        int maxMediaPointMarkerNum = 100000;
+        if (showMediaPoint && points.size() < maxMediaPointMarkerNum) {
 
             BitmapDescriptor mediaBitmap = BitmapDescriptorFactory
                     .fromResource(R.drawable.icon_point);
-            for (int i = 1; i < latLngs.size() - 1; i++) {
+            for (int i = 1; i < points.size() - 1; i++) {
                 OverlayOptions mediaMaker = new MarkerOptions()
-                        .position(latLngs.get(i))
+                        .position(points.get(i))
                         .icon(mediaBitmap);
-                baiduMap.addOverlay(mediaMaker);
+                mBaiduMap.addOverlay(mediaMaker);
             }
         }
-        */
+
 
     }
 
@@ -393,5 +414,79 @@ public class MainActivity extends AppCompatActivity {
         return time;
     }
 
+    private class drawRouteFromFileTask extends AsyncTask<String, Integer, LatLngBounds> {
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            kProgressHUD.show();
+            mBaiduMap.clear();
+        }
+
+        @Override
+        protected LatLngBounds doInBackground(String... params) {
+
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            String arrayString = FileUtil.readFile(params[0]);
+            if (arrayString == null) {
+                return null;
+            } else {
+                List<LatLng> route = new ArrayList<>();
+                if (!arrayString.equals("")) {
+                    try {
+                        JSONArray array = new JSONArray(arrayString);
+                        LatLngBounds.Builder latLngBoundsBuilder = new LatLngBounds.Builder();
+                        for (int i = 0; i < array.length(); i++) {
+                            JSONObject json = (JSONObject) array.get(i);
+                            double lat = json.getDouble("latitude");
+                            double lng = json.getDouble("longitude");
+                            LatLng point = new LatLng(lat, lng);
+                            route.add(point);
+                            latLngBoundsBuilder.include(point);
+                        }
+                        drawRoute(route);
+                        return latLngBoundsBuilder.build();
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        return null;
+                    }
+                } else {
+                    return null;
+                }
+            }
+        }
+
+        @Override
+        protected void onProgressUpdate(Integer... values) {
+            super.onProgressUpdate(values[0]);
+        }
+
+        @Override
+        protected void onPostExecute(LatLngBounds latLngBounds) {
+            super.onPostExecute(latLngBounds);
+            kProgressHUD.dismiss();
+            String msg = (latLngBounds!= null) ? "绘制完成" : "绘制失败";
+            Toast.makeText(RouteRecordActivity.this, msg, Toast.LENGTH_SHORT).show();
+            if (latLngBounds != null) {
+                MapStatus mapStatus = new MapStatus.Builder()
+                        .zoom(13)
+                        .rotate(0)
+                        .overlook(0)
+                        .build();
+                MapStatusUpdate mapStatusUpdate1 = MapStatusUpdateFactory
+                        .newLatLngBounds(latLngBounds);
+                MapStatusUpdate mapStatusUpdate2 = MapStatusUpdateFactory
+                        .newMapStatus(mapStatus);
+                mBaiduMap.setMapStatus(mapStatusUpdate2);
+                mBaiduMap.animateMapStatus(mapStatusUpdate1);
+            }
+        }
+
+    }
 
 }
