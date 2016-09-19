@@ -43,10 +43,6 @@ public class FileUtil {
             writer.flush();
             writer.close();
             Toast.makeText(context, "已保存为" + name + ".txt", Toast.LENGTH_SHORT).show();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -57,13 +53,11 @@ public class FileUtil {
         StringBuffer sBuf = new StringBuffer();
         try {
             fis = new FileInputStream(FILE_PATH + name);
-            int len = 0;
+            int len;
             byte[] buf = new byte[1024];
             while ((len = fis.read(buf)) != -1) {
                 sBuf.append(new String(buf,0,len));
             }
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }finally {
@@ -75,10 +69,7 @@ public class FileUtil {
                 }
             }
         }
-        if(sBuf != null) {
-            return sBuf.toString();
-        }
-        return null;
+        return sBuf.toString();
     }
 
     public static List<Map<String, Object>> getFilesData() {
@@ -99,6 +90,23 @@ public class FileUtil {
         File f = new File(FILE_PATH);
         File[] files = f.listFiles();
         return files[files.length - 1].getName();
+    }
+
+    public static void renameFile(String oldName, String newName) {
+        if(!oldName.equals(newName)){//新的文件名和以前文件名不同时,才有必要进行重命名
+            File oldFile = new File(FILE_PATH + "/" + oldName);
+            File newFile = new File(FILE_PATH + "/" + newName);
+            if(!oldFile.exists()){
+                return;  //重命名文件不存在
+            }
+            if(newFile.exists())//若在该目录下已经有一个文件和新文件名相同，则不允许重命名
+                System.out.println(newName + "已经存在！");
+            else{
+                oldFile.renameTo(newFile);
+            }
+        }else{
+            System.out.println("新文件名和旧文件名相同...");
+        }
     }
 
     public static void deleteFile(String fileName) {

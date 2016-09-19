@@ -31,6 +31,7 @@ import com.baidu.mapapi.map.OverlayOptions;
 import com.baidu.mapapi.map.PolylineOptions;
 import com.baidu.mapapi.model.LatLng;
 import com.baidu.mapapi.model.LatLngBounds;
+import com.baidu.mapapi.model.inner.Point;
 import com.kaopiz.kprogresshud.KProgressHUD;
 
 import org.json.JSONArray;
@@ -101,6 +102,7 @@ public class RouteRecordActivity extends AppCompatActivity {
 
     private void init() {
         mBaiduMap = mapView.getMap();
+        mBaiduMap.setCompassPosition(new android.graphics.Point(80,80));
         GPSSpanEditText.setText(defaultGPSSpan + "");
 
         mLocationClient = new LocationClient(getApplicationContext());     //声明LocationClient类
@@ -482,7 +484,7 @@ public class RouteRecordActivity extends AppCompatActivity {
                         .newLatLngBounds(latLngBounds);
                 MapStatusUpdate mapStatusUpdate2 = MapStatusUpdateFactory
                         .newMapStatus(mapStatus);
-                mBaiduMap.setMapStatus(mapStatusUpdate2);
+//                mBaiduMap.setMapStatus(mapStatusUpdate2);
                 mBaiduMap.animateMapStatus(mapStatusUpdate1);
             }
         }
