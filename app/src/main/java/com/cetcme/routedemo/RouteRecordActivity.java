@@ -2,6 +2,7 @@ package com.cetcme.routedemo;
 
 import android.content.Intent;
 import android.os.AsyncTask;
+import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -38,6 +39,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -95,9 +101,22 @@ public class RouteRecordActivity extends AppCompatActivity {
         initHud();
     }
 
+    private OutputStreamWriter writer;
+    private String FILE_PATH = FileUtil.FILE_PATH;
+    private String FILE_NAME;
+
     public void onDestroy() {
         super.onDestroy();
         mLocationClient.stop();
+        if (writer != null) {
+            try {
+                writer.write("]");
+                writer.close();
+                writer = null;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private void init() {
@@ -134,6 +153,28 @@ public class RouteRecordActivity extends AppCompatActivity {
     public void recordButtonTapped(View view) {
         routeRecording = !routeRecording;
         recordButton.setText(routeRecording ? "STOP" : "RECORD");
+        if (routeRecording) {
+            File filePath = new File(FILE_PATH);
+            if(!filePath.exists()) {
+                filePath.mkdir();
+            }
+            FILE_NAME = getDate() + ".txt";
+        } else {
+            try {
+                FileOutputStream outStream = new FileOutputStream(new File(FILE_PATH + FILE_NAME), true);
+                writer = new OutputStreamWriter(outStream, "UTF-8");
+                writer.write("]");
+                writer.close();
+                Toast.makeText(RouteRecordActivity.this, "保存成功", Toast.LENGTH_SHORT).show();
+                writer = null;
+                FILE_NAME = null;
+                routePointsWhileRecording = new ArrayList<>();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        }
+
     }
 
     public void showUserButtonTapped(View view) {
@@ -183,15 +224,6 @@ public class RouteRecordActivity extends AppCompatActivity {
                 break;
             default:
                 break;
-        }
-    }
-
-    public void saveButtonTapped(View view) {
-        if (routePoints.length() != 0) {
-            FileUtil.saveFile(RouteRecordActivity.this, getDate(), routePoints.toString());
-            routePoints = new JSONArray();
-        } else {
-            Toast.makeText(RouteRecordActivity.this, "保持失败:内容为空", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -274,7 +306,7 @@ public class RouteRecordActivity extends AppCompatActivity {
                     sb.append(p.getId() + " " + p.getName() + " " + p.getRank());
                 }
             }
-            Log.i("BaiduLocationApiDem", sb.toString());
+//            Log.i("BaiduLocationApiDem", sb.toString());
 
             updateMyLocation(location);
             locationInfoEditText.setText(sb.toString());
@@ -312,16 +344,38 @@ public class RouteRecordActivity extends AppCompatActivity {
 
     private void drawRouteWhileRecording(BDLocation location) {
 
-        if (routePointsWhileRecording.size() == 0) {
-            routePointsWhileRecording.add(new LatLng(location.getLatitude(), location.getLongitude()));
-        } else  if (routePointsWhileRecording.size() == 1) {
-            routePointsWhileRecording.add(new LatLng(location.getLatitude(), location.getLongitude()));
-            drawRoute(routePointsWhileRecording);
-        } else {
-            routePointsWhileRecording.remove(0);
-            routePointsWhileRecording.add(new LatLng(location.getLatitude(), location.getLongitude()));
-            drawRoute(routePointsWhileRecording);
+        try {
+            FileOutputStream outStream = new FileOutputStream(new File(FILE_PATH  + FILE_NAME), true);
+            writer = new OutputStreamWriter(outStream, "UTF-8");
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+
+        try {
+            LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+            if (routePointsWhileRecording.size() == 0) {
+                writer.write("[");
+                writer.write("{" + latLng.toString() + "}");
+                writer.close();
+                routePointsWhileRecording.add(latLng);
+            } else  if (routePointsWhileRecording.size() == 1) {
+                writer.write(",");
+                writer.write("{" + latLng.toString() + "}");
+                writer.close();
+                routePointsWhileRecording.add(latLng);
+                drawRoute(routePointsWhileRecording, false);
+            } else {
+                writer.write(",");
+                writer.write("{" + latLng.toString() + "}");
+                writer.close();
+                routePointsWhileRecording.remove(0);
+                routePointsWhileRecording.add(latLng);
+                drawRoute(routePointsWhileRecording, false);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 
     private void initMyLocation() {
@@ -356,7 +410,7 @@ public class RouteRecordActivity extends AppCompatActivity {
         mBaiduMap.animateMapStatus(mapStatusUpdate);
     }
 
-    public void drawRoute(List<LatLng> points) {
+    public void drawRoute(List<LatLng> points, boolean drawIcon) {
 
         //构建分段颜色索引数组
         List<Integer> colors = new ArrayList<>();
@@ -374,37 +428,41 @@ public class RouteRecordActivity extends AppCompatActivity {
         //添加在地图中
         mBaiduMap.addOverlay(ooPolyline);
 
-        //起点终点标注
-        //构建Marker图标
-        BitmapDescriptor startBitmap = BitmapDescriptorFactory
-                .fromResource(R.drawable.icon_start);
-        BitmapDescriptor endBitmap = BitmapDescriptorFactory
-                .fromResource(R.drawable.icon_end);
-        //构建MarkerOption，用于在地图上添加Marker
-        OverlayOptions startMaker = new MarkerOptions()
-                .position(points.get(0))
-                .icon(startBitmap);
-        OverlayOptions endMaker = new MarkerOptions()
-                .position(points.get(points.size() - 1))
-                .icon(endBitmap);
-        //在地图上添加Marker，并显示
-        mBaiduMap.addOverlay(startMaker);
-        mBaiduMap.addOverlay(endMaker);
 
-        //showMediaPoint
-        boolean showMediaPoint = false;
-        int maxMediaPointMarkerNum = 100000;
-        if (showMediaPoint && points.size() < maxMediaPointMarkerNum) {
+        if (drawIcon) {
+            //起点终点标注
+            //构建Marker图标
+            BitmapDescriptor startBitmap = BitmapDescriptorFactory
+                    .fromResource(R.drawable.icon_start);
+            BitmapDescriptor endBitmap = BitmapDescriptorFactory
+                    .fromResource(R.drawable.icon_end);
+            //构建MarkerOption，用于在地图上添加Marker
+            OverlayOptions startMaker = new MarkerOptions()
+                    .position(points.get(0))
+                    .icon(startBitmap);
+            OverlayOptions endMaker = new MarkerOptions()
+                    .position(points.get(points.size() - 1))
+                    .icon(endBitmap);
+            //在地图上添加Marker，并显示
+            mBaiduMap.addOverlay(startMaker);
+            mBaiduMap.addOverlay(endMaker);
 
-            BitmapDescriptor mediaBitmap = BitmapDescriptorFactory
-                    .fromResource(R.drawable.icon_point);
-            for (int i = 1; i < points.size() - 1; i++) {
-                OverlayOptions mediaMaker = new MarkerOptions()
-                        .position(points.get(i))
-                        .icon(mediaBitmap);
-                mBaiduMap.addOverlay(mediaMaker);
+            //showMediaPoint
+            boolean showMediaPoint = false;
+            int maxMediaPointMarkerNum = 100000;
+            if (showMediaPoint && points.size() < maxMediaPointMarkerNum) {
+
+                BitmapDescriptor mediaBitmap = BitmapDescriptorFactory
+                        .fromResource(R.drawable.icon_point);
+                for (int i = 1; i < points.size() - 1; i++) {
+                    OverlayOptions mediaMaker = new MarkerOptions()
+                            .position(points.get(i))
+                            .icon(mediaBitmap);
+                    mBaiduMap.addOverlay(mediaMaker);
+                }
             }
         }
+
 
 
     }
@@ -435,31 +493,31 @@ public class RouteRecordActivity extends AppCompatActivity {
             }
 
             String arrayString = FileUtil.readFile(params[0]);
-            if (arrayString == null) {
-                return null;
-            } else {
-                List<LatLng> route = new ArrayList<>();
-                if (!arrayString.equals("")) {
-                    try {
-                        JSONArray array = new JSONArray(arrayString);
-                        LatLngBounds.Builder latLngBoundsBuilder = new LatLngBounds.Builder();
-                        for (int i = 0; i < array.length(); i++) {
-                            JSONObject json = (JSONObject) array.get(i);
-                            double lat = json.getDouble("latitude");
-                            double lng = json.getDouble("longitude");
-                            LatLng point = new LatLng(lat, lng);
-                            route.add(point);
-                            latLngBoundsBuilder.include(point);
-                        }
-                        drawRoute(route);
-                        return latLngBoundsBuilder.build();
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                        return null;
+            if (!arrayString.substring(arrayString.length() - 1, arrayString.length()).equals("]")) {
+                arrayString += "]";
+            }
+
+            List<LatLng> route = new ArrayList<>();
+            if (!arrayString.equals("")) {
+                try {
+                    JSONArray array = new JSONArray(arrayString);
+                    LatLngBounds.Builder latLngBoundsBuilder = new LatLngBounds.Builder();
+                    for (int i = 0; i < array.length(); i++) {
+                        JSONObject json = (JSONObject) array.get(i);
+                        double lat = json.getDouble("latitude");
+                        double lng = json.getDouble("longitude");
+                        LatLng point = new LatLng(lat, lng);
+                        route.add(point);
+                        latLngBoundsBuilder.include(point);
                     }
-                } else {
+                    drawRoute(route, true);
+                    return latLngBoundsBuilder.build();
+                } catch (JSONException e) {
+                    e.printStackTrace();
                     return null;
                 }
+            } else {
+                return null;
             }
         }
 

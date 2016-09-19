@@ -40,7 +40,6 @@ public class FileUtil {
             FileOutputStream outStream = new FileOutputStream(new File(FILE_PATH  + name + ".txt"));
             OutputStreamWriter writer = new OutputStreamWriter(outStream, "UTF-8");
             writer.write(data);
-            writer.flush();
             writer.close();
             Toast.makeText(context, "已保存为" + name + ".txt", Toast.LENGTH_SHORT).show();
         } catch (IOException e) {
