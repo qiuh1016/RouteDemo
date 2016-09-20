@@ -29,5 +29,5 @@ dependencies {
     apt 'com.jakewharton:butterknife-compiler:8.4.0'
     compile files('libs/BaiduLBS_Android.jar')
     compile 'com.kaopiz:kprogresshud:1.0.5'
-    compile 'com.github.qiuh1016:qhdialog:v1.0.3'
+    compile 'com.github.qiuh1016:qhDialog:1.1.1'
 }

@@ -5,6 +5,8 @@ import android.os.Environment;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.qiuhong.qhlibrary.Dialog.QHDialog;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -37,11 +39,28 @@ public class FileUtil {
         }
 
         try {
-            FileOutputStream outStream = new FileOutputStream(new File(FILE_PATH  + name + ".txt"));
+            FileOutputStream outStream = new FileOutputStream(new File(FILE_PATH  + name));
             OutputStreamWriter writer = new OutputStreamWriter(outStream, "UTF-8");
             writer.write(data);
             writer.close();
-            Toast.makeText(context, "已保存为" + name + ".txt", Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, "开始录制:" + name, Toast.LENGTH_SHORT).show();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void appendData(String name, String data) {
+
+        File filePath = new File(FILE_PATH);
+        if(!filePath.exists()) {
+            filePath.mkdir();
+        }
+
+        try {
+            FileOutputStream outStream = new FileOutputStream(new File(FILE_PATH  + name), true);
+            OutputStreamWriter writer = new OutputStreamWriter(outStream, "UTF-8");
+            writer.write(data);
+            writer.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -79,6 +98,7 @@ public class FileUtil {
             Map<String, Object> map = new Hashtable<>();
             map.put("fileName", file.getName());
             map.put("lastModifyTime", stampToDate(file.lastModified()));
+            map.put("lastModifyStamp", file.lastModified());
             map.put("fileLength", (new BigDecimal(file.length() / 1024f)).setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue() + "KB");
             filesData.add(map);
         }
@@ -91,16 +111,17 @@ public class FileUtil {
         return files[files.length - 1].getName();
     }
 
-    public static void renameFile(String oldName, String newName) {
+    public static void renameFile(Context context, String oldName, String newName) {
         if(!oldName.equals(newName)){//新的文件名和以前文件名不同时,才有必要进行重命名
             File oldFile = new File(FILE_PATH + "/" + oldName);
             File newFile = new File(FILE_PATH + "/" + newName);
             if(!oldFile.exists()){
                 return;  //重命名文件不存在
             }
-            if(newFile.exists())//若在该目录下已经有一个文件和新文件名相同，则不允许重命名
+            if(newFile.exists()) {//若在该目录下已经有一个文件和新文件名相同，则不允许重命名
                 System.out.println(newName + "已经存在！");
-            else{
+                new QHDialog(context, "提示", "文件名已存在!").show();
+            } else{
                 oldFile.renameTo(newFile);
             }
         }else{

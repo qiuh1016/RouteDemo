@@ -85,6 +85,8 @@ public class RouteRecordActivity extends AppCompatActivity {
     private boolean isFirstGetLocation = true;
     private BDLocation userLocation;
 
+    private String FILE_NAME;
+
     private KProgressHUD kProgressHUD;
     private KProgressHUD okHUD;
 
@@ -101,22 +103,9 @@ public class RouteRecordActivity extends AppCompatActivity {
         initHud();
     }
 
-    private OutputStreamWriter writer;
-    private String FILE_PATH = FileUtil.FILE_PATH;
-    private String FILE_NAME;
-
     public void onDestroy() {
         super.onDestroy();
         mLocationClient.stop();
-        if (writer != null) {
-            try {
-                writer.write("]");
-                writer.close();
-                writer = null;
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
     }
 
     private void init() {
@@ -154,25 +143,12 @@ public class RouteRecordActivity extends AppCompatActivity {
         routeRecording = !routeRecording;
         recordButton.setText(routeRecording ? "STOP" : "RECORD");
         if (routeRecording) {
-            File filePath = new File(FILE_PATH);
-            if(!filePath.exists()) {
-                filePath.mkdir();
-            }
-            FILE_NAME = getDate() + ".txt";
+            FILE_NAME = System.currentTimeMillis() + ".txt";
         } else {
-            try {
-                FileOutputStream outStream = new FileOutputStream(new File(FILE_PATH + FILE_NAME), true);
-                writer = new OutputStreamWriter(outStream, "UTF-8");
-                writer.write("]");
-                writer.close();
-                Toast.makeText(RouteRecordActivity.this, "保存成功", Toast.LENGTH_SHORT).show();
-                writer = null;
-                FILE_NAME = null;
-                routePointsWhileRecording = new ArrayList<>();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
+            FileUtil.appendData(FILE_NAME, "]");
+            Toast.makeText(RouteRecordActivity.this, "保存成功", Toast.LENGTH_SHORT).show();
+            FILE_NAME = null;
+            routePointsWhileRecording = new ArrayList<>();
         }
 
     }
@@ -311,8 +287,6 @@ public class RouteRecordActivity extends AppCompatActivity {
             updateMyLocation(location);
             locationInfoEditText.setText(sb.toString());
 
-
-
             // qh
             if (isFirstGetLocation) {
                 setMapStatus(new LatLng(location.getLatitude(), location.getLongitude()), 17);
@@ -343,37 +317,19 @@ public class RouteRecordActivity extends AppCompatActivity {
     }
 
     private void drawRouteWhileRecording(BDLocation location) {
-
-        try {
-            FileOutputStream outStream = new FileOutputStream(new File(FILE_PATH  + FILE_NAME), true);
-            writer = new OutputStreamWriter(outStream, "UTF-8");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        try {
-            LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-            if (routePointsWhileRecording.size() == 0) {
-                writer.write("[");
-                writer.write("{" + latLng.toString() + "}");
-                writer.close();
-                routePointsWhileRecording.add(latLng);
-            } else  if (routePointsWhileRecording.size() == 1) {
-                writer.write(",");
-                writer.write("{" + latLng.toString() + "}");
-                writer.close();
-                routePointsWhileRecording.add(latLng);
-                drawRoute(routePointsWhileRecording, false);
-            } else {
-                writer.write(",");
-                writer.write("{" + latLng.toString() + "}");
-                writer.close();
-                routePointsWhileRecording.remove(0);
-                routePointsWhileRecording.add(latLng);
-                drawRoute(routePointsWhileRecording, false);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+        LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+        if (routePointsWhileRecording.size() == 0) {
+            FileUtil.saveFile(RouteRecordActivity.this, FILE_NAME, "[{" + latLng.toString() + "}");
+            routePointsWhileRecording.add(latLng);
+        } else  if (routePointsWhileRecording.size() == 1) {
+            FileUtil.appendData(FILE_NAME, ",{" + latLng.toString() + "}");
+            routePointsWhileRecording.add(latLng);
+            drawRoute(routePointsWhileRecording, false);
+        } else {
+            FileUtil.appendData(FILE_NAME, ",{" + latLng.toString() + "}");
+            routePointsWhileRecording.remove(0);
+            routePointsWhileRecording.add(latLng);
+            drawRoute(routePointsWhileRecording, false);
         }
 
     }
@@ -470,7 +426,6 @@ public class RouteRecordActivity extends AppCompatActivity {
     private String getDate() {
         SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         String time = df.format(new Date());
-        Log.i(TAG, "getDate: " + time);
         return time;
     }
 
