@@ -88,5 +88,15 @@
         android:layout_alignStart="@+id/showUserButton"
         android:onClick="userButtonTapped"/>
 
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="offLine"
+        android:id="@+id/offline_map_button"
+        android:layout_below="@+id/userButton"
+        android:layout_alignLeft="@+id/userButton"
+        android:layout_alignStart="@+id/userButton"
+        android:onClick="offlineMapButtonTapped"/>
+
 
 </RelativeLayout>

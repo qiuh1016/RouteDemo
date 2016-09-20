@@ -60,14 +60,14 @@ public class RouteFilesActivity extends AppCompatActivity {
                         "文件大小: " + dataList.get(position).get("fileLength") + "\n" +
                         "修改时间: " + dataList.get(position).get("lastModifyTime");
                 QHDialog qhDialog = new QHDialog(RouteFilesActivity.this, "文件详情" , msg);
-                qhDialog.setNegativeButton("绘图", 0, new DialogInterface.OnClickListener() {
+                qhDialog.setNegativeButton("绘图", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         dialog.dismiss();
                         drawRoute(position);
                     }
                 });
-                qhDialog.setPositiveButton("重命名", 0, new DialogInterface.OnClickListener() {
+                qhDialog.setPositiveButton("重命名", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         dialog.dismiss();
@@ -116,7 +116,7 @@ public class RouteFilesActivity extends AppCompatActivity {
         final String oldFileName = dataList.get(Position).get("fileName").toString();
         newFileNameEditText.setText(oldFileName.replace(".txt", ""));
         renameDialog.setContextView(view);
-        renameDialog.setPositiveButton("重命名", 0, new DialogInterface.OnClickListener() {
+        renameDialog.setPositiveButton("重命名", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 if (!newFileNameEditText.getText().toString().isEmpty()) {
@@ -128,7 +128,7 @@ public class RouteFilesActivity extends AppCompatActivity {
                 }
             }
         });
-        renameDialog.setNegativeButton("取消", 0, null);
+        renameDialog.setNegativeButton("取消", null);
         renameDialog.show();
     }
 
@@ -143,12 +143,9 @@ public class RouteFilesActivity extends AppCompatActivity {
                 simpleAdapter.notifyDataSetChanged();
             }
         });
-        deleteDialog.setNegativeButton("取消", 0, null);
+        deleteDialog.setNegativeButton("取消", null);
         deleteDialog.show();
     }
 
-    private void noFileSelected() {
-        new QHDialog(RouteFilesActivity.this, "提示", "请选择一个轨迹文件").show();
-    }
 
 }
