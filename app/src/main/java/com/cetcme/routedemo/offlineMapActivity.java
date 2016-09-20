@@ -6,12 +6,10 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
-import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
@@ -21,6 +19,8 @@ import com.baidu.mapapi.map.offline.MKOLSearchRecord;
 import com.baidu.mapapi.map.offline.MKOLUpdateElement;
 import com.baidu.mapapi.map.offline.MKOfflineMap;
 import com.baidu.mapapi.map.offline.MKOfflineMapListener;
+import com.github.lzyzsd.circleprogress.DonutProgress;
+import com.qiuhong.qhlibrary.Utils.DensityUtil;
 
 import java.util.ArrayList;
 import java.util.Hashtable;
@@ -39,9 +39,9 @@ public class OfflineMapActivity extends Activity implements MKOfflineMapListener
     private MKOfflineMap mOffline = null;
 
     @BindView(R.id.cityid)
-    TextView cidView;
+    TextView cityIDTextView;
     @BindView(R.id.city)
-    EditText cityNameView;
+    EditText cityNameTextView;
     @BindView(R.id.state)
     TextView stateView;
     /**
@@ -83,8 +83,8 @@ public class OfflineMapActivity extends Activity implements MKOfflineMapListener
         hotCityList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                cidView.setText(hotCities.get(position).get("cityID").toString());
-                cityNameView.setText(hotCities.get(position).get("cityName").toString());
+                cityIDTextView.setText(hotCities.get(position).get("cityID").toString());
+                cityNameTextView.setText(hotCities.get(position).get("cityName").toString());
             }
         });
 
@@ -109,8 +109,8 @@ public class OfflineMapActivity extends Activity implements MKOfflineMapListener
         allCityList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                cidView.setText(allCities.get(position).get("cityID").toString());
-                cityNameView.setText(allCities.get(position).get("cityName").toString());
+                cityIDTextView.setText(allCities.get(position).get("cityID").toString());
+                cityNameTextView.setText(allCities.get(position).get("cityName").toString());
             }
         });
 
@@ -163,12 +163,12 @@ public class OfflineMapActivity extends Activity implements MKOfflineMapListener
      * @param view
      */
     public void search(View view) {
-        ArrayList<MKOLSearchRecord> records = mOffline.searchCity(cityNameView
+        ArrayList<MKOLSearchRecord> records = mOffline.searchCity(cityNameTextView
                 .getText().toString());
         if (records == null || records.size() != 1) {
             return;
         }
-        cidView.setText(String.valueOf(records.get(0).cityID));
+        cityIDTextView.setText(String.valueOf(records.get(0).cityID));
     }
 
     /**
@@ -177,10 +177,10 @@ public class OfflineMapActivity extends Activity implements MKOfflineMapListener
      * @param view
      */
     public void start(View view) {
-        int cityid = Integer.parseInt(cidView.getText().toString());
-        mOffline.start(cityid);
+        int cityID = Integer.parseInt(cityIDTextView.getText().toString());
+        mOffline.start(cityID);
         clickLocalMapListButton(null);
-        Toast.makeText(this, "开始下载离线地图. cityid: " + cityid, Toast.LENGTH_SHORT)
+        Toast.makeText(this, "开始下载离线地图. cityID: " + cityID, Toast.LENGTH_SHORT)
                 .show();
         updateView();
     }
@@ -191,9 +191,9 @@ public class OfflineMapActivity extends Activity implements MKOfflineMapListener
      * @param view
      */
     public void stop(View view) {
-        int cityid = Integer.parseInt(cidView.getText().toString());
-        mOffline.pause(cityid);
-        Toast.makeText(this, "暂停下载离线地图. cityid: " + cityid, Toast.LENGTH_SHORT)
+        int cityID = Integer.parseInt(cityIDTextView.getText().toString());
+        mOffline.pause(cityID);
+        Toast.makeText(this, "暂停下载离线地图. cityID: " + cityID, Toast.LENGTH_SHORT)
                 .show();
         updateView();
     }
@@ -204,9 +204,9 @@ public class OfflineMapActivity extends Activity implements MKOfflineMapListener
      * @param view
      */
     public void remove(View view) {
-        int cityid = Integer.parseInt(cidView.getText().toString());
-        mOffline.remove(cityid);
-        Toast.makeText(this, "删除离线地图. cityid: " + cityid, Toast.LENGTH_SHORT)
+        int cityID = Integer.parseInt(cityIDTextView.getText().toString());
+        mOffline.remove(cityID);
+        Toast.makeText(this, "删除离线地图. cityID: " + cityID, Toast.LENGTH_SHORT)
                 .show();
         updateView();
     }
@@ -224,10 +224,10 @@ public class OfflineMapActivity extends Activity implements MKOfflineMapListener
 
     @Override
     protected void onPause() {
-        int cityid = Integer.parseInt(cidView.getText().toString());
-        MKOLUpdateElement temp = mOffline.getUpdateInfo(cityid);
+        int cityID = Integer.parseInt(cityIDTextView.getText().toString());
+        MKOLUpdateElement temp = mOffline.getUpdateInfo(cityID);
         if (temp != null && temp.status == MKOLUpdateElement.DOWNLOADING) {
-            mOffline.pause(cityid);
+            mOffline.pause(cityID);
         }
         super.onPause();
     }
@@ -238,11 +238,11 @@ public class OfflineMapActivity extends Activity implements MKOfflineMapListener
     }
 
     public String formatDataSize(int size) {
-        String ret = "";
+        String ret;
         if (size < (1024 * 1024)) {
-            ret = String.format("%dK", size / 1024);
+            ret = String.format("%dKB", size / 1024);
         } else {
-            ret = String.format("%.1fM", size / (1024 * 1024.0));
+            ret = String.format("%.1fMB", size / (1024 * 1024.0));
         }
         return ret;
     }
@@ -316,6 +316,13 @@ public class OfflineMapActivity extends Activity implements MKOfflineMapListener
             TextView title = (TextView) view.findViewById(R.id.title);
             TextView update = (TextView) view.findViewById(R.id.update);
             TextView ratio = (TextView) view.findViewById(R.id.ratio);
+            DonutProgress donutProgress = (DonutProgress) view.findViewById(R.id.donut_progress);
+
+            donutProgress.setUnfinishedStrokeWidth(DensityUtil.dip2px(OfflineMapActivity.this, 2));
+            donutProgress.setFinishedStrokeWidth(DensityUtil.dip2px(OfflineMapActivity.this, 2));
+            donutProgress.setTextSize(DensityUtil.dip2px(OfflineMapActivity.this, 7));
+            donutProgress.setProgress(e.ratio);
+
             ratio.setText(e.ratio + "%");
             title.setText(e.cityName);
             if (e.update) {
