@@ -1,6 +1,7 @@
 package com.cetcme.routedemo;
 
 import android.app.Activity;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -20,6 +21,7 @@ import com.baidu.mapapi.map.offline.MKOLUpdateElement;
 import com.baidu.mapapi.map.offline.MKOfflineMap;
 import com.baidu.mapapi.map.offline.MKOfflineMapListener;
 import com.github.lzyzsd.circleprogress.DonutProgress;
+import com.qiuhong.qhlibrary.Dialog.QHDialog;
 import com.qiuhong.qhlibrary.Utils.DensityUtil;
 
 import java.util.ArrayList;
@@ -77,8 +79,8 @@ public class OfflineMapActivity extends Activity implements MKOfflineMapListener
         }
         SimpleAdapter hAdapter = new SimpleAdapter(OfflineMapActivity.this, hotCities,
                         R.layout.offline_map_list,
-                        new String[] {"cityID", "cityName", "dataSize"},
-                        new int[] {R.id.id, R.id.name, R.id.size});
+                        new String[] {"cityName", "dataSize"},
+                        new int[] {R.id.name, R.id.size});
         hotCityList.setAdapter(hAdapter);
         hotCityList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -103,8 +105,8 @@ public class OfflineMapActivity extends Activity implements MKOfflineMapListener
         }
         SimpleAdapter aAdapter = new SimpleAdapter(OfflineMapActivity.this, allCities,
                 R.layout.offline_map_list,
-                new String[] {"cityID", "cityName", "dataSize"},
-                new int[] {R.id.id, R.id.name, R.id.size});
+                new String[] {"cityName", "dataSize"},
+                new int[] {R.id.name, R.id.size});
         allCityList.setAdapter(aAdapter);
         allCityList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -185,6 +187,14 @@ public class OfflineMapActivity extends Activity implements MKOfflineMapListener
         updateView();
     }
 
+    class DownloadOfflineMap implements Runnable {
+        @Override
+        public void run() {
+            int cityID = Integer.parseInt(cityIDTextView.getText().toString());
+            mOffline.start(cityID);
+        }
+    }
+
     /**
      * 暂停下载
      *
@@ -205,10 +215,22 @@ public class OfflineMapActivity extends Activity implements MKOfflineMapListener
      */
     public void remove(View view) {
         int cityID = Integer.parseInt(cityIDTextView.getText().toString());
-        mOffline.remove(cityID);
-        Toast.makeText(this, "删除离线地图. cityID: " + cityID, Toast.LENGTH_SHORT)
-                .show();
-        updateView();
+        removeOfflineMap(cityID, cityNameTextView.getText().toString());
+    }
+
+    private void removeOfflineMap(final int cityID, final String cityName) {
+        QHDialog removeDialog = new QHDialog(OfflineMapActivity.this, "提示", "是否删除\"" + cityName +"\"?");
+        removeDialog.setPositiveButton("删除", R.drawable.button_background_alert, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+                mOffline.remove(cityID);
+                Toast.makeText(OfflineMapActivity.this, "删除离线地图: " + cityName, Toast.LENGTH_SHORT).show();
+                updateView();
+            }
+        });
+        removeDialog.setNegativeButton("取消", null);
+        removeDialog.show();
     }
 
     /**
@@ -334,8 +356,7 @@ public class OfflineMapActivity extends Activity implements MKOfflineMapListener
             remove.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View arg0) {
-                    mOffline.remove(e.cityID);
-                    updateView();
+                    removeOfflineMap(e.cityID, e.cityName);
                 }
             });
         }

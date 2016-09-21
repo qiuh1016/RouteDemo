@@ -1,9 +1,12 @@
 package com.cetcme.routedemo;
 
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.AsyncTask;
+import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -32,6 +35,7 @@ import com.baidu.mapapi.model.LatLng;
 import com.baidu.mapapi.model.LatLngBounds;
 import com.github.lzyzsd.circleprogress.DonutProgress;
 import com.kaopiz.kprogresshud.KProgressHUD;
+import com.qiuhong.qhlibrary.Dialog.QHDialog;
 import com.qiuhong.qhlibrary.Utils.DensityUtil;
 
 import org.json.JSONArray;
@@ -57,11 +61,8 @@ public class RouteRecordActivity extends AppCompatActivity {
     @BindView(R.id.setButton)
     Button setButton;
 
-    @BindView(R.id.editText)
+    @BindView(R.id.GPSSpanEditText)
     EditText GPSSpanEditText;
-
-    @BindView(R.id.editText2)
-    EditText locationInfoEditText;
 
     @BindView(R.id.bmapView)
     MapView mapView;
@@ -73,7 +74,7 @@ public class RouteRecordActivity extends AppCompatActivity {
 
     private int defaultGPSSpan = 10;
     private List<LatLng> routePointsWhileRecording = new ArrayList<>();
-    private JSONArray routePoints = new JSONArray();
+//    private JSONArray routePoints = new JSONArray();
     private boolean routeRecording = false;
     private boolean showUser = true;
     private boolean isFirstGetLocation = true;
@@ -83,6 +84,8 @@ public class RouteRecordActivity extends AppCompatActivity {
 
     private KProgressHUD kProgressHUD;
     private KProgressHUD okHUD;
+
+    private Toast gpsFailToast;
 
     private String TAG = "RouteRecordActivity";
 
@@ -97,6 +100,23 @@ public class RouteRecordActivity extends AppCompatActivity {
         initHud();
     }
 
+    public void onBackPressed() {
+        if (routeRecording) {
+            QHDialog backDialog = new QHDialog(RouteRecordActivity.this, "提示", "正在录制路径,是否退出?");
+            backDialog.setPositiveButton("退出", R.drawable.button_background_alert, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    dialog.dismiss();
+                    finish();
+                }
+            });
+            backDialog.setNegativeButton("取消", null);
+            backDialog.show();
+        } else {
+            super.onBackPressed();
+        }
+    }
+
     public void onDestroy() {
         super.onDestroy();
         mLocationClient.stop();
@@ -104,8 +124,11 @@ public class RouteRecordActivity extends AppCompatActivity {
 
     private void init() {
         mBaiduMap = mapView.getMap();
-        mBaiduMap.setCompassPosition(new android.graphics.Point(80,80));
+        mBaiduMap.setCompassPosition(new android.graphics.Point(80, 80));
+
         GPSSpanEditText.setText(defaultGPSSpan + "");
+
+        gpsFailToast = Toast.makeText(RouteRecordActivity.this, "定位失败，请检查网络是否通畅", Toast.LENGTH_SHORT);
 
         mLocationClient = new LocationClient(getApplicationContext());     //声明LocationClient类
         mLocationClient.registerLocationListener( myListener );    //注册监听函数
@@ -284,19 +307,33 @@ public class RouteRecordActivity extends AppCompatActivity {
 //            Log.i("BaiduLocationApiDem", sb.toString());
 
             updateMyLocation(location);
-            locationInfoEditText.setText(sb.toString());
 
             // qh
-            if (isFirstGetLocation) {
-                setMapStatus(new LatLng(location.getLatitude(), location.getLongitude()), 17);
-                isFirstGetLocation = false;
-            }
-            userLocation = location;
+//            if (isFirstGetLocation) {
+//                if (location.getLatitude() == 4.9E-324 && location.getLongitude() == 4.9E-324) {
+////                    setMapStatus(new LatLng(30, 122), 13);
+//
+//                } else {
+//                    setMapStatus(new LatLng(location.getLatitude(), location.getLongitude()), 17);
+//                }
+//                isFirstGetLocation = false;
+//
+//            }
 
-            if (routeRecording) {
-                drawRouteWhileRecording(location);
-                routePoints.put(BDLocationToJson(location));
+            if (location.getLatitude() != 4.9E-324 || location.getLongitude() != 4.9E-324) {
+                if (userLocation == null) {
+                    setMapStatus(new LatLng(location.getLatitude(), location.getLongitude()), 17);
+                }
+                userLocation = location;
+                if (routeRecording) {
+                    drawRouteWhileRecording(location);
+//                    routePoints.put(BDLocationToJson(location));
+                }
+            } else {
+                gpsFailToast.show();
             }
+
+
 
         }
     }
@@ -440,11 +477,11 @@ public class RouteRecordActivity extends AppCompatActivity {
         @Override
         protected LatLngBounds doInBackground(String... params) {
 
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+//            try {
+//                Thread.sleep(1000);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
 
             String arrayString = FileUtil.readFile(params[0]);
             if (!arrayString.substring(arrayString.length() - 1, arrayString.length()).equals("]")) {
@@ -461,8 +498,13 @@ public class RouteRecordActivity extends AppCompatActivity {
                         double lat = json.getDouble("latitude");
                         double lng = json.getDouble("longitude");
                         LatLng point = new LatLng(lat, lng);
-                        route.add(point);
-                        latLngBoundsBuilder.include(point);
+                        if (lat == 4.9E-324 && lng == 4.9E-324) {
+                            Log.i(TAG, "doInBackground: 0.0");
+                        } else {
+                            route.add(point);
+                            latLngBoundsBuilder.include(point);
+                        }
+
                     }
                     drawRoute(route, true);
                     return latLngBoundsBuilder.build();

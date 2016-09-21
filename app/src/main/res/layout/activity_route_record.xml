@@ -15,10 +15,10 @@
         android:layout_height="match_parent"
         android:clickable="true"
         android:layout_marginTop="50dp"
-        android:layout_marginBottom="200dp" />
+        android:layout_alignParentBottom="true"/>
 
     <Button
-        android:layout_width="80dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="record"
         android:id="@+id/recordButton"
@@ -28,42 +28,32 @@
         android:onClick="recordButtonTapped"/>
 
     <EditText
-        android:layout_width="50dp"
+        android:layout_width="80dp"
         android:layout_height="wrap_content"
-        android:id="@+id/editText"
+        android:id="@+id/GPSSpanEditText"
         android:inputType="number"
         android:textSize="13sp"
         android:layout_alignBottom="@+id/setButton"
         android:layout_toLeftOf="@+id/button"
         android:layout_toStartOf="@+id/button"
-        android:layout_alignParentTop="true" />
+        android:layout_alignParentTop="true"
+        android:gravity="center"/>
 
     <Button
-        android:layout_width="80dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="设置"
+        android:text="Set"
         android:id="@+id/setButton"
         android:layout_alignBottom="@+id/recordButton"
         android:onClick="setButtonTapped"
         android:layout_alignParentRight="true" />
-
-    <EditText
-        android:layout_width="match_parent"
-        android:layout_height="200dp"
-        android:id="@+id/editText2"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
-        android:editable="false"
-        android:enabled="true"
-        android:textSize="10sp" />
 
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="route"
         android:id="@+id/button"
-        android:layout_alignTop="@+id/editText2"
+        android:layout_alignTop="@+id/bmapView"
         android:layout_alignEnd="@+id/setButton"
         android:onClick="routeButtonTapped"
         android:layout_alignParentRight="true" />
